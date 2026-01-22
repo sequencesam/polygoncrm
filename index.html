@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Polygon CRM</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useMemo, useEffect } = React;
+
+        const ChevronUp = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="18 15 12 9 6 15"/></svg>;
+        const ChevronDown = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>;
+        const Plus = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
+        const X = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
+        const FileText = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>;
+        const Search = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>;
+        const Download = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>;
+        const Upload = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>;
+        const Filter = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>;
+        const Save = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>;
+        const Layers = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>;
+
+        const INITIAL_DATA = [
+            { id: 1, customer: 'Perpl', owners: ['Amber'], nextActionDate: '2026-01-28', otherRemarks: 'Intro from Agora - call set up for next week', revenueRemark: 'Agora introducing', pos: false, posRev: 0, cdk: false, cdkRev: 0, trails: true, trailsRev: 0, sequence: false, sequenceRev: 0, coinme: false, coinmeRev: 0, tentativeClosingDate: '', closedDate: '', stage: 'Prospecting' },
+            { id: 2, customer: 'Lighter', owners: ['Amber'], nextActionDate: '2026-01-27', otherRemarks: 'Polygon Push needed - Testing APIs', revenueRemark: '450k', pos: false, posRev: 0, cdk: false, cdkRev: 0, trails: true, trailsRev: 900000, sequence: false, sequenceRev: 0, coinme: false, coinmeRev: 0, tentativeClosingDate: '', closedDate: '', stage: 'Qualified' },
+            { id: 3, customer: 'KaiOS', owners: ['Sam B', 'Aishwary'], nextActionDate: '2026-01-23', otherRemarks: 'Will create C library for them', revenueRemark: 'Embedded wallet', pos: true, posRev: 0, cdk: false, cdkRev: 0, trails: false, trailsRev: 0, sequence: true, sequenceRev: 770000, coinme: false, coinmeRev: 0, tentativeClosingDate: '', closedDate: '', stage: 'Demo' },
+            { id: 4, customer: 'Immutable', owners: ['Sam B'], nextActionDate: '2026-01-22', otherRemarks: 'Final negotiation into contracting', revenueRemark: '1.3mn', pos: false, posRev: 0, cdk: false, cdkRev: 0, trails: true, trailsRev: 0, sequence: true, sequenceRev: 1300000, coinme: false, coinmeRev: 0, tentativeClosingDate: '', closedDate: '', stage: 'Negotiation' }
+        ];
+
+        const App = () => {
+            const [isAuthenticated, setIsAuthenticated] = useState(false);
+            const [password, setPassword] = useState('');
+            const [error, setError] = useState('');
+
+            const handleLogin = () => {
+                if (password === '0xpolygon') {
+                    setIsAuthenticated(true);
+                    setError('');
+                } else {
+                    setError('Incorrect password');
+                    setTimeout(() => setError(''), 3000);
+                }
+            };
+
+            if (!isAuthenticated) {
+                return (
+                    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-600 to-blue-600">
+                        <div className="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md">
+                            <h2 className="text-2xl font-bold mb-6 text-center text-gray-900">Polygon CRM Login</h2>
+                            <input
+                                type="password"
+                                placeholder="Enter password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <button
+                                onClick={handleLogin}
+                                className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
+                            >
+                                Login
+                            </button>
+                            {error && <div className="text-red-600 text-center mt-4">{error}</div>}
+                        </div>
+                    </div>
+                );
+            }
+
+            return <CRMApp />;
+        };
+
+        const CRMApp = () => {
+            const [customers, setCustomers] = useState(() => {
+                const saved = localStorage.getItem('polygon_crm_data');
+                return saved ? JSON.parse(saved) : INITIAL_DATA;
+            });
+
+            const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+            const [showAddForm, setShowAddForm] = useState(false);
+            const [activeView, setActiveView] = useState('table');
+            const [editingCell, setEditingCell] = useState(null);
+            const [reportData, setReportData] = useState(null);
+            const [searchQuery, setSearchQuery] = useState('');
+            const [showFilters, setShowFilters] = useState(false);
+            const [filters, setFilters] = useState({
+                owner: '',
+                product: '',
+                stage: '',
+                minRevenue: '',
+                maxRevenue: '',
+                dateFrom: '',
+                dateTo: ''
+            });
+            const [savedViews, setSavedViews] = useState(() => {
+                const saved = localStorage.getItem('polygon_crm_views');
+                return saved ? JSON.parse(saved) : [];
+            });
+            const [currentView, setCurrentView] = useState(null);
+
+            const [newCustomer, setNewCustomer] = useState({
+                customer: '', owners: [], nextActionDate: '', otherRemarks: '', revenueRemark: '',
+                pos: false, posRev: 0, cdk: false, cdkRev: 0, trails: false, trailsRev: 0,
+                sequence: false, sequenceRev: 0, coinme: false, coinmeRev: 0,
+                tentativeClosingDate: '', closedDate: '', stage: 'Prospecting'
+            });
+
+            useEffect(() => {
+                localStorage.setItem('polygon_crm_data', JSON.stringify(customers));
+            }, [customers]);
+
+            useEffect(() => {
+                localStorage.setItem('polygon_crm_views', JSON.stringify(savedViews));
+            }, [savedViews]);
+
+            const ownerColors = {
+                'Amber': 'bg-pink-100 text-pink-800 border-pink-300',
+                'Aishwary': 'bg-purple-100 text-purple-800 border-purple-300',
+                'Sam B': 'bg-blue-100 text-blue-800 border-blue-300',
+                'Andre': 'bg-green-100 text-green-800 border-green-300',
+                'Sam F': 'bg-yellow-100 text-yellow-800 border-yellow-300',
+                'Jamal': 'bg-red-100 text-red-800 border-red-300',
+                'Samal': 'bg-indigo-100 text-indigo-800 border-indigo-300',
+                'Eran': 'bg-teal-100 text-teal-800 border-teal-300',
+                'Rahul': 'bg-orange-100 text-orange-800 border-orange-300',
+                'RT': 'bg-cyan-100 text-cyan-800 border-cyan-300',
+                'Serena': 'bg-rose-100 text-rose-800 border-rose-300',
+                'JT': 'bg-lime-100 text-lime-800 border-lime-300'
+            };
+
+            const stages = ['Prospecting', 'Qualified', 'Demo', 'Negotiation', 'Closed Won', 'Closed Lost'];
+            const stageColors = {
+                'Prospecting': 'bg-gray-100 text-gray-800',
+                'Qualified': 'bg-blue-100 text-blue-800',
+                'Demo': 'bg-purple-100 text-purple-800',
+                'Negotiation': 'bg-yellow-100 text-yellow-800',
+                'Closed Won': 'bg-green-100 text-green-800',
+                'Closed Lost': 'bg-red-100 text-red-800'
+            };
+
+            const ownersList = Object.keys(ownerColors);
+
+            const columns = [
+                { key: 'customer', label: 'Customer', type: 'text' },
+                { key: 'owners', label: 'Owner', type: 'owners' },
+                { key: 'stage', label: 'Stage', type: 'stage' },
+                { key: 'nextActionDate', label: 'Next Action Date', type: 'date' },
+                { key: 'otherRemarks', label: 'Other Remarks', type: 'text' },
+                { key: 'aggregateRev', label: 'Aggregate Rev', type: 'currency' },
+                { key: 'products', label: 'Product(s)', type: 'array' },
+                { key: 'pos', label: 'POS', type: 'boolean' },
+                { key: 'posRev', label: 'POS Rev', type: 'currency' },
+                { key: 'cdk', label: 'CDK', type: 'boolean' },
+                { key: 'cdkRev', label: 'CDK Rev', type: 'currency' },
+                { key: 'trails', label: 'Trails', type: 'boolean' },
+                { key: 'trailsRev', label: 'Trails Rev', type: 'currency' },
+                { key: 'sequence', label: 'Sequence', type: 'boolean' },
+                { key: 'sequenceRev', label: 'Sequence Rev', type: 'currency' },
+                { key: 'coinme', label: 'Coinme', type: 'boolean' },
+                { key: 'coinmeRev', label: 'CoinMe Rev', type: 'currency' },
+                { key: 'revenueRemark', label: 'Revenue Remark', type: 'text' },
+                { key: 'tentativeClosingDate', label: 'Tentative Closing', type: 'date' },
+                { key: 'closedDate', label: 'Closed Date', type: 'date' }
+            ];
+
+            const calcAggRev = (c) => (c.posRev||0) + (c.cdkRev||0) + (c.trailsRev||0) + (c.sequenceRev||0) + (c.coinmeRev||0);
+            
+            const updateProds = (c) => {
+                const p = [];
+                if (c.pos) p.push('POS');
+                if (c.cdk) p.push('CDK');
+                if (c.trails) p.push('Trails');
+                if (c.sequence) p.push('Sequence');
+                if (c.coinme) p.push('CoinMe');
+                return p;
+            };
+            
+            const updateCust = (c) => ({ ...c, aggregateRev: calcAggRev(c), products: updateProds(c), stage: c.stage || 'Prospecting' });
+            
+            const handleSort = (key) => setSortConfig({ key, direction: sortConfig.key === key && sortConfig.direction === 'asc' ? 'desc' : 'asc' });
+
+            const filteredData = useMemo(() => {
+                let data = customers.map(c => updateCust(c));
+
+                if (searchQuery) {
+                    const q = searchQuery.toLowerCase();
+                    data = data.filter(c => 
+                        c.customer.toLowerCase().includes(q) ||
+                        c.owners.some(o => o.toLowerCase().includes(q)) ||
+                        (c.otherRemarks && c.otherRemarks.toLowerCase().includes(q)) ||
+                        (c.revenueRemark && c.revenueRemark.toLowerCase().includes(q)) ||
+                        (c.stage && c.stage.toLowerCase().includes(q))
+                    );
+                }
+
+                if (filters.owner) data = data.filter(c => c.owners.includes(filters.owner));
+                if (filters.product) data = data.filter(c => c[filters.product.toLowerCase()]);
+                if (filters.stage) data = data.filter(c => c.stage === filters.stage);
+                if (filters.minRevenue) data = data.filter(c => c.aggregateRev >= parseFloat(filters.minRevenue));
+                if (filters.maxRevenue) data = data.filter(c => c.aggregateRev <= parseFloat(filters.maxRevenue));
+                if (filters.dateFrom) data = data.filter(c => c.nextActionDate >= filters.dateFrom);
+                if (filters.dateTo) data = data.filter(c => c.nextActionDate <= filters.dateTo);
+
+                return data;
+            }, [customers, searchQuery, filters]);
+
+            const sortedData = useMemo(() => {
+                let s = [...filteredData];
+                if (sortConfig.key) {
+                    s.sort((a, b) => {
+                        let av = a[sortConfig.key];
+                        let bv = b[sortConfig.key];
+                        if (Array.isArray(av)) av = av.join(', ');
+                        if (Array.isArray(bv)) bv = bv.join(', ');
+                        if (av < bv) return sortConfig.direction === 'asc' ? -1 : 1;
+                        if (av > bv) return sortConfig.direction === 'asc' ? 1 : -1;
+                        return 0;
+                    });
+                }
+                return s;
+            }, [filteredData, sortConfig]);
+
+            const addCust = () => {
+                setCustomers([...customers, updateCust({ ...newCustomer, id: Date.now() })]);
+                setNewCustomer({ customer: '', owners: [], nextActionDate: '', otherRemarks: '', revenueRemark: '', pos: false, posRev: 0, cdk: false, cdkRev: 0, trails: false, trailsRev: 0, sequence: false, sequenceRev: 0, coinme: false, coinmeRev: 0, tentativeClosingDate: '', closedDate: '', stage: 'Prospecting' });
+                setShowAddForm(false);
+            };
+
+            const delCust = (id) => setCustomers(customers.filter(c => c.id !== id));
+            
+            const updateCell = (id, field, value) => {
+                setCustomers(customers.map(c => c.id === id ? updateCust({ ...c, [field]: value }) : c));
+                setEditingCell(null);
+            };
+
+            const exportToCSV = () => {
+                const headers = columns.map(c => c.label).join(',');
+                const rows = sortedData.map(c => 
+                    columns.map(col => {
+                        const val = c[col.key];
+                        if (Array.isArray(val)) return `"${val.join(', ')}"`;
+                        if (typeof val === 'boolean') return val ? 'Yes' : 'No';
+                        if (typeof val === 'number') return val;
+                        return `"${val || ''}"`;
+                    }).join(',')
+                );
+                const csv = [headers, ...rows].join('\n');
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `polygon-crm-export-${new Date().toISOString().split('T')[0]}.csv`;
+                a.click();
+            };
+
+            const importFromCSV = (e) => {
+                console.log('=== CSV IMPORT STARTED ===');
+                const file = e.target.files[0];
+                console.log('File:', file);
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    console.log('FileReader loaded');
+                    try {
+                        const text = event.target.result;
+                        console.log('CSV text length:', text.length);
+                        const lines = text.split('\n');
+                        console.log('Total lines:', lines.length);
+                        const headers = lines[0].split(',');
+                        console.log('Headers:', headers);
+                        const imported = lines.slice(1).filter(line => line.trim()).map((line, idx) => {
+                            const values = line.match(/(".*?"|[^,]+)(?=\s*,|\s*$)/g);
+                            if (!values) {
+                                console.warn('Line', idx, 'failed to parse:', line);
+                                return null;
+                            }
+                            const cleanValues = values.map(v => v.replace(/^"|"$/g, ''));
+                            console.log('Row', idx, 'values:', cleanValues.length);
+                            const obj = { id: Date.now() + idx };
+                            headers.forEach((h, i) => {
+                                // Map CSV column names to CRM column names
+                                const headerMap = {
+                                    'Company': 'Customer',
+                                    'Customer Owner': 'Owner',
+                                    'Aggregate Rev': 'Aggregate Rev',
+                                    'Product(s)': 'Product(s)',
+                                    'Revenue Remark': 'Revenue Remark',
+                                    'Tentative Closing Date': 'Tentative Closing',
+                                    'Next Action Date': 'Next Action Date',
+                                    'Other Remarks': 'Other Remarks',
+                                    'Status': 'Stage'
+                                };
+                                
+                                const mappedHeader = headerMap[h.trim()] || h.trim();
+                                const col = columns.find(c => c.label === mappedHeader);
+                                if (col) {
+                                    if (col.type === 'boolean') obj[col.key] = cleanValues[i] === 'Yes';
+                                    else if (col.type === 'currency' || col.type === 'number') obj[col.key] = parseFloat(cleanValues[i]) || 0;
+                                    else if (col.type === 'owners' || col.type === 'array') obj[col.key] = cleanValues[i] ? cleanValues[i].split(',').map(v => v.trim()) : [];
+                                    else obj[col.key] = cleanValues[i] || '';
+                                }
+                            });
+                            return updateCust(obj);
+                        }).filter(row => row !== null);
+                        console.log('Successfully imported', imported.length, 'rows');
+                        setCustomers([...customers, ...imported]);
+                        alert(`Imported ${imported.length} customers successfully!`);
+                    } catch (err) {
+                        console.error('CSV Import Error:', err);
+                        console.error('Error stack:', err.stack);
+                        alert('Error importing CSV: ' + err.message);
+                    }
+                };
+                reader.readAsText(file);
+            };
+
+            const saveCurrentView = () => {
+                const viewName = prompt('Enter a name for this view:');
+                if (viewName) {
+                    setSavedViews([...savedViews, { name: viewName, filters: {...filters}, search: searchQuery }]);
+                    alert('View saved!');
+                }
+            };
+
+            const loadView = (view) => {
+                setFilters(view.filters);
+                setSearchQuery(view.search);
+                setCurrentView(view.name);
+            };
+
+            const applyQuickFilter = (type) => {
+                switch(type) {
+                    case 'high-value':
+                        setFilters({...filters, minRevenue: '500000'});
+                        break;
+                    case 'this-month':
+                        const now = new Date();
+                        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+                        const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+                        setFilters({...filters, dateFrom: monthStart, dateTo: monthEnd});
+                        break;
+                    case 'closing-soon':
+                        const today = new Date().toISOString().split('T')[0];
+                        const weekLater = new Date(Date.now() + 7*24*60*60*1000).toISOString().split('T')[0];
+                        setFilters({...filters, dateFrom: today, dateTo: weekLater});
+                        break;
+                }
+            };
+
+            const clearFilters = () => {
+                setFilters({ owner: '', product: '', stage: '', minRevenue: '', maxRevenue: '', dateFrom: '', dateTo: '' });
+                setSearchQuery('');
+                setCurrentView(null);
+            };
+
+            const getWeek = (d) => { 
+                const dt = new Date(d); 
+                dt.setHours(0,0,0,0); 
+                dt.setDate(dt.getDate() + 4 - (dt.getDay()||7)); 
+                const ys = new Date(dt.getFullYear(), 0, 1); 
+                return `${dt.getFullYear()}-W${Math.ceil((((dt - ys) / 86400000) + 1) / 7)}`; 
+            };
+            
+            const getQuarter = (d) => { 
+                const dt = new Date(d); 
+                return `${dt.getFullYear()}-Q${Math.floor(dt.getMonth() / 3) + 1}`; 
+            };
+
+            const genReport = () => {
+                const upd = customers.map(c => updateCust(c));
+                const cw = getWeek(new Date());
+                const dtw = upd.filter(c => c.nextActionDate && getWeek(c.nextActionDate) === cw).sort((a,b) => (b.aggregateRev||0) - (a.aggregateRev||0)).slice(0,10);
+                const tr = upd.reduce((s, c) => s + (c.aggregateRev||0), 0);
+                const rbm = {};
+                const rbq = {};
+                upd.forEach(c => {
+                    if (c.tentativeClosingDate) {
+                        const d = new Date(c.tentativeClosingDate);
+                        const m = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                        rbm[m] = (rbm[m]||0) + (c.aggregateRev||0);
+                    }
+                    if (c.closedDate) {
+                        const q = getQuarter(c.closedDate);
+                        rbq[q] = (rbq[q]||0) + (c.aggregateRev||0);
+                    }
+                });
+                const dwr = upd.filter(c => c.aggregateRev > 0);
+                const ads = dwr.length > 0 ? dwr.reduce((s,c) => s + c.aggregateRev, 0) / dwr.length : 0;
+                const dbp = { 
+                    POS: upd.filter(c => c.pos).length, 
+                    CDK: upd.filter(c => c.cdk).length, 
+                    Trails: upd.filter(c => c.trails).length, 
+                    Sequence: upd.filter(c => c.sequence).length, 
+                    CoinMe: upd.filter(c => c.coinme).length 
+                };
+                
+                const stageCount = {};
+                stages.forEach(stage => {
+                    stageCount[stage] = upd.filter(c => c.stage === stage).length;
+                });
+
+                const revenueByStage = {};
+                stages.forEach(stage => {
+                    revenueByStage[stage] = upd.filter(c => c.stage === stage).reduce((s, c) => s + (c.aggregateRev||0), 0);
+                });
+
+                setActiveView('report');
+                setReportData({ 
+                    dealsThisWeek: dtw, 
+                    totalRevenue: tr, 
+                    revenueByMonth: rbm, 
+                    revenueByQuarter: rbq, 
+                    avgDealSize: ads, 
+                    dealsByProduct: dbp, 
+                    stageCount, 
+                    revenueByStage, 
+                    generatedAt: new Date().toLocaleString() 
+                });
+            };
+
+            const fmt = (v) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(v||0);
+
+            const renderCell = (cust, col) => {
+                const val = cust[col.key];
+                const isEd = editingCell?.id === cust.id && editingCell?.key === col.key;
+
+                if (col.type === 'boolean') {
+                    return (
+                        <input 
+                            type="checkbox" 
+                            checked={val} 
+                            onChange={(e) => updateCell(cust.id, col.key, e.target.checked)} 
+                            className="rounded" 
+                        />
+                    );
+                }
+                
+                if (col.type === 'stage') {
+                    return isEd ? (
+                        <select 
+                            defaultValue={val} 
+                            onBlur={(e) => updateCell(cust.id, col.key, e.target.value)} 
+                            autoFocus 
+                            className="w-full px-2 py-1 border rounded"
+                        >
+                            {stages.map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                    ) : (
+                        <div onClick={() => setEditingCell({ id: cust.id, key: col.key })} className="cursor-pointer">
+                            <span className={`px-2 py-1 rounded text-xs font-medium ${stageColors[val] || 'bg-gray-100 text-gray-800'}`}>
+                                {val || 'Prospecting'}
+                            </span>
+                        </div>
+                    );
+                }
+                
+                if (col.type === 'currency' || col.type === 'number') {
+                    return isEd ? (
+                        <input 
+                            type="number" 
+                            defaultValue={val||0} 
+                            onBlur={(e) => updateCell(cust.id, col.key, parseFloat(e.target.value)||0)} 
+                            onKeyDown={(e) => e.key === 'Enter' && e.target.blur()} 
+                            autoFocus 
+                            className="w-full px-2 py-1 border rounded" 
+                        />
+                    ) : (
+                        <div 
+                            onClick={() => setEditingCell({ id: cust.id, key: col.key })} 
+                            className="cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
+                        >
+                            {col.type === 'currency' ? fmt(val) : (val||0)}
+                        </div>
+                    );
+                }
+                
+                if (col.type === 'date') {
+                    return isEd ? (
+                        <input 
+                            type="date" 
+                            defaultValue={val||''} 
+                            onBlur={(e) => updateCell(cust.id, col.key, e.target.value)} 
+                            onKeyDown={(e) => e.key === 'Enter' && e.target.blur()} 
+                            autoFocus 
+                            className="w-full px-2 py-1 border rounded" 
+                        />
+                    ) : (
+                        <div 
+                            onClick={() => setEditingCell({ id: cust.id, key: col.key })} 
+                            className="cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
+                        >
+                            {val||'-'}
+                        </div>
+                    );
+                }
+                
+                if (col.type === 'text') {
+                    return isEd ? (
+                        <input 
+                            type="text" 
+                            defaultValue={val||''} 
+                            onBlur={(e) => updateCell(cust.id, col.key, e.target.value)} 
+                            onKeyDown={(e) => e.key === 'Enter' && e.target.blur()} 
+                            autoFocus 
+                            className="w-full px-2 py-1 border rounded" 
+                        />
+                    ) : (
+                        <div 
+                            onClick={() => setEditingCell({ id: cust.id, key: col.key })} 
+                            className="cursor-pointer hover:bg-gray-100 px-2 py-1 rounded"
+                        >
+                            {val||'-'}
+                        </div>
+                    );
+                }
+                
+                if (col.type === 'array') {
+                    return <div className="px-2 py-1">{val?.join(', ')||'-'}</div>;
+                }
+                
+                if (col.type === 'owners') {
+                    return (
+                        <div className="flex flex-wrap gap-1">
+                            {val?.map((o,i) => (
+                                <span key={i} className={`px-2 py-1 rounded-full text-xs font-medium border ${ownerColors[o]}`}>
+                                    {o}
+                                </span>
+                            ))||'-'}
+                        </div>
+                    );
+                }
+                
+                return <div className="px-2 py-1">{val||'-'}</div>;
+            };
+
+            const toggleOwner = (o) => {
+                const cur = newCustomer.owners||[];
+                setNewCustomer({ ...newCustomer, owners: cur.includes(o) ? cur.filter(x => x !== o) : [...cur, o] });
+            };
+
+            return (
+                <div className="min-h-screen bg-gray-50 p-6">
+                    <div className="max-w-7xl mx-auto">
+                        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+                            <div className="flex justify-between items-center mb-6">
+                                <h1 className="text-3xl font-bold text-gray-900">Polygon CRM</h1>
+                                <div className="flex gap-2">
+                                    <button 
+                                        onClick={() => setActiveView('table')} 
+                                        className={`px-4 py-2 rounded-lg font-medium ${activeView === 'table' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+                                    >
+                                        Table
+                                    </button>
+                                    <button 
+                                        onClick={() => setActiveView('kanban')} 
+                                        className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 ${activeView === 'kanban' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+                                    >
+                                        <Layers />Pipeline
+                                    </button>
+                                    <button 
+                                        onClick={genReport} 
+                                        className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 ${activeView === 'report' ? 'bg-purple-600 text-white' : 'bg-purple-100 text-purple-700'}`}
+                                    >
+                                        <FileText />Report
+                                    </button>
+                                    <button 
+                                        onClick={() => setShowAddForm(!showAddForm)} 
+                                        className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2"
+                                    >
+                                        <Plus />Add
+                                    </button>
+                                </div>
+                            </div>
+
+                            {activeView === 'table' && (
+                                <div className="mb-6 space-y-4">
+                                    <div className="flex gap-2">
+                                        <div className="flex-1 relative">
+                                            <Search className="absolute left-3 top-3 text-gray-400" />
+                                            <input
+                                                type="text"
+                                                placeholder="Search customers, owners, remarks..."
+                                                value={searchQuery}
+                                                onChange={(e) => setSearchQuery(e.target.value)}
+                                                className="w-full pl-10 pr-4 py-2 border rounded-lg"
+                                            />
+                                        </div>
+                                        <button 
+                                            onClick={() => setShowFilters(!showFilters)} 
+                                            className="px-4 py-2 border rounded-lg flex items-center gap-2 hover:bg-gray-50"
+                                        >
+                                            <Filter />Filters
+                                        </button>
+                                        <button 
+                                            onClick={exportToCSV} 
+                                            className="px-4 py-2 border rounded-lg flex items-center gap-2 hover:bg-gray-50"
+                                        >
+                                            <Download />Export
+                                        </button>
+                                        <label className="px-4 py-2 border rounded-lg flex items-center gap-2 hover:bg-gray-50 cursor-pointer">
+                                            <Upload />Import
+                                            <input type="file" accept=".csv" onChange={importFromCSV} className="hidden" />
+                                        </label>
+                                    </div>
+
+                                    <div className="flex gap-2 flex-wrap">
+                                        <button 
+                                            onClick={() => applyQuickFilter('high-value')} 
+                                            className="px-3 py-1 text-sm bg-green-100 text-green-700 rounded-full hover:bg-green-200"
+                                        >
+                                            💰 High Value (&gt;500K)
+                                        </button>
+                                        <button 
+                                            onClick={() => applyQuickFilter('this-month')} 
+                                            className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-full hover:bg-blue-200"
+                                        >
+                                            📅 This Month
+                                        </button>
+                                        <button 
+                                            onClick={() => applyQuickFilter('closing-soon')} 
+                                            className="px-3 py-1 text-sm bg-yellow-100 text-yellow-700 rounded-full hover:bg-yellow-200"
+                                        >
+                                            ⚡ Closing Soon
+                                        </button>
+                                        {(searchQuery || Object.values(filters).some(v => v)) && (
+                                            <button 
+                                                onClick={clearFilters} 
+                                                className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded-full hover:bg-red-200"
+                                            >
+                                                ✕ Clear All
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {savedViews.length > 0 && (
+                                        <div className="flex gap-2 items-center">
+                                            <span className="text-sm text-gray-600">Saved Views:</span>
+                                            {savedViews.map((view, idx) => (
+                                                <button 
+                                                    key={idx} 
+                                                    onClick={() => loadView(view)} 
+                                                    className={`px-3 py-1 text-sm rounded-full ${currentView === view.name ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                                                >
+                                                    {view.name}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {showFilters && (
+                                        <div className="bg-gray-50 p-4 rounded-lg border grid grid-cols-4 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium mb-1">Owner</label>
+                                                <select 
+                                                    value={filters.owner} 
+                                                    onChange={(e) => setFilters({...filters, owner: e.target.value})} 
+                                                    className="w-full px-3 py-2 border rounded-lg"
+                                                >
+                                                    <option value="">All</option>
+                                                    {ownersList.map(o => <option key={o} value={o}>{o}</option>)}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium mb-1">Product</label>
+                                                <select 
+                                                    value={filters.product} 
+                                                    onChange={(e) => setFilters({...filters, product: e.target.value})} 
+                                                    className="w-full px-3 py-2 border rounded-lg"
+                                                >
+                                                    <option value="">All</option>
+                                                    <option value="POS">POS</option>
+                                                    <option value="CDK">CDK</option>
+                                                    <option value="Trails">Trails</option>
+                                                    <option value="Sequence">Sequence</option>
+                                                    <option value="Coinme">Coinme</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium mb-1">Stage</label>
+                                                <select 
+                                                    value={filters.stage} 
+                                                    onChange={(e) => setFilters({...filters, stage: e.target.value})} 
+                                                    className="w-full px-3 py-2 border rounded-lg"
+                                                >
+                                                    <option value="">All</option>
+                                                    {stages.map(s => <option key={s} value={s}>{s}</option>)}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium mb-1">Min Revenue</label>
+                                                <input 
+                                                    type="number" 
+                                                    value={filters.minRevenue} 
+                                                    onChange={(e) => setFilters({...filters, minRevenue: e.target.value})} 
+                                                    placeholder="0" 
+                                                    className="w-full px-3 py-2 border rounded-lg" 
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium mb-1">Max Revenue</label>
+                                                <input 
+                                                    type="number" 
+                                                    value={filters.maxRevenue} 
+                                                    onChange={(e) => setFilters({...filters, maxRevenue: e.target.value})} 
+                                                    placeholder="∞" 
+                                                    className="w-full px-3 py-2 border rounded-lg" 
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium mb-1">Date From</label>
+                                                <input 
+                                                    type="date" 
+                                                    value={filters.dateFrom} 
+                                                    onChange={(e) => setFilters({...filters, dateFrom: e.target.value})} 
+                                                    className="w-full px-3 py-2 border rounded-lg" 
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium mb-1">Date To</label>
+                                                <input 
+                                                    type="date" 
+                                                    value={filters.dateTo} 
+                                                    onChange={(e) => setFilters({...filters, dateTo: e.target.value})} 
+                                                    className="w-full px-3 py-2 border rounded-lg" 
+                                                />
+                                            </div>
+                                            <div className="flex items-end">
+                                                <button 
+                                                    onClick={saveCurrentView} 
+                                                    className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg flex items-center justify-center gap-2 hover:bg-blue-700"
+                                                >
+                                                    <Save />Save View
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="text-sm text-gray-600">
+                                        Showing {sortedData.length} of {customers.length} deals
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeView === 'kanban' && (
+                                <div className="overflow-x-auto pb-4">
+                                    <div className="flex gap-4 min-w-max">
+                                        {stages.map(stage => {
+                                            const stageDeals = sortedData.filter(c => c.stage === stage);
+                                            const stageRevenue = stageDeals.reduce((s, c) => s + (c.aggregateRev||0), 0);
+                                            return (
+                                                <div key={stage} className="w-80 bg-gray-50 rounded-lg p-4">
+                                                    <div className="flex justify-between items-center mb-4">
+                                                        <h3 className="font-semibold text-gray-900">{stage}</h3>
+                                                        <div className="text-sm text-gray-600">{stageDeals.length} • {fmt(stageRevenue)}</div>
+                                                    </div>
+                                                    <div className="space-y-3 max-h-96 overflow-y-auto">
+                                                        {stageDeals.map(deal => (
+                                                            <div key={deal.id} className="bg-white p-3 rounded-lg shadow-sm border hover:shadow-md transition-shadow">
+                                                                <div className="font-medium text-gray-900 mb-1">{deal.customer}</div>
+                                                                <div className="text-sm text-gray-600 mb-2">{fmt(deal.aggregateRev)}</div>
+                                                                <div className="flex flex-wrap gap-1 mb-2">
+                                                                    {deal.owners.map((o, i) => (
+                                                                        <span key={i} className={`px-2 py-0.5 rounded-full text-xs ${ownerColors[o]}`}>{o}</span>
+                                                                    ))}
+                                                                </div>
+                                                                <div className="flex flex-wrap gap-1">
+                                                                    {deal.products.map((p, i) => (
+                                                                        <span key={i} className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">{p}</span>
+                                                                    ))}
+                                                                </div>
+                                                                <div className="mt-2">
+                                                                    <select 
+                                                                        value={deal.stage} 
+                                                                        onChange={(e) => updateCell(deal.id, 'stage', e.target.value)}
+                                                                        className="w-full text-xs px-2 py-1 border rounded"
+                                                                    >
+                                                                        {stages.map(s => <option key={s} value={s}>{s}</option>)}
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeView === 'report' && reportData && (
+                                <div className="space-y-8">
+                                    <div className="text-sm text-gray-500">Generated: {reportData.generatedAt}</div>
+                                    
+                                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6 border border-blue-200">
+                                        <h2 className="text-xl font-bold mb-4">Top Deals This Week</h2>
+                                        <div className="space-y-3">
+                                            {reportData.dealsThisWeek.length > 0 ? reportData.dealsThisWeek.map((d,i) => (
+                                                <div key={d.id} className="bg-white rounded-lg p-4 shadow-sm">
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div>
+                                                            <div className="font-bold text-lg">#{i+1} - {d.customer}</div>
+                                                            <div className="text-sm text-gray-600 mt-2">
+                                                                <div><strong>Owners:</strong> {d.owners.join(', ')}</div>
+                                                                <div><strong>Next Action:</strong> {d.nextActionDate}</div>
+                                                                <div><strong>Products:</strong> {d.products.join(', ')}</div>
+                                                                <div><strong>Stage:</strong> <span className={`px-2 py-0.5 rounded text-xs ${stageColors[d.stage]}`}>{d.stage}</span></div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <div className="text-2xl font-bold text-blue-600">{fmt(d.aggregateRev)}</div>
+                                                            <div className="text-sm text-gray-600 mt-2">{d.otherRemarks}</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )) : <div className="text-gray-500 text-center py-4">No deals this week</div>}
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-6">
+                                        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-6 border border-green-200">
+                                            <h2 className="text-xl font-bold mb-2">Total Pipeline Revenue</h2>
+                                            <div className="text-4xl font-bold text-green-600">{fmt(reportData.totalRevenue)}</div>
+                                        </div>
+                                        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-6 border border-purple-200">
+                                            <h2 className="text-xl font-bold mb-2">Average Deal Size</h2>
+                                            <div className="text-4xl font-bold text-purple-600">{fmt(reportData.avgDealSize)}</div>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white border rounded-lg p-6">
+                                        <h2 className="text-xl font-bold mb-4">Pipeline by Stage</h2>
+                                        <div className="space-y-3">
+                                            {Object.entries(reportData.stageCount).map(([stage, count]) => (
+                                                <div key={stage} className="flex items-center gap-4">
+                                                    <div className="w-32">
+                                                        <span className={`px-3 py-1 rounded text-sm font-medium ${stageColors[stage]}`}>{stage}</span>
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="flex-1 bg-gray-200 rounded-full h-4">
+                                                                <div 
+                                                                    className="bg-blue-600 h-4 rounded-full" 
+                                                                    style={{width: `${(count / customers.length) * 100}%`}}
+                                                                />
+                                                            </div>
+                                                            <div className="w-24 text-right">
+                                                                <div className="font-semibold">{count} deals</div>
+                                                                <div className="text-sm text-gray-600">{fmt(reportData.revenueByStage[stage])}</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white border rounded-lg p-6">
+                                        <h2 className="text-xl font-bold mb-4">Tentative Revenue by Month</h2>
+                                        <div className="space-y-2">
+                                            {Object.entries(reportData.revenueByMonth).sort().map(([m,r]) => (
+                                                <div key={m} className="flex justify-between items-center py-2 border-b">
+                                                    <span className="font-medium">{m}</span>
+                                                    <span className="text-lg font-semibold">{fmt(r)}</span>
+                                                </div>
+                                            ))}
+                                            {Object.keys(reportData.revenueByMonth).length === 0 && <div className="text-gray-500 text-center py-4">No tentative dates set</div>}
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white border rounded-lg p-6">
+                                        <h2 className="text-xl font-bold mb-4">Closed Revenue by Quarter</h2>
+                                        <div className="space-y-2">
+                                            {Object.entries(reportData.revenueByQuarter).sort().map(([q,r]) => (
+                                                <div key={q} className="flex justify-between items-center py-2 border-b">
+                                                    <span className="font-medium">{q}</span>
+                                                    <span className="text-lg font-semibold">{fmt(r)}</span>
+                                                </div>
+                                            ))}
+                                            {Object.keys(reportData.revenueByQuarter).length === 0 && <div className="text-gray-500 text-center py-4">No closed dates set</div>}
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white border rounded-lg p-6">
+                                        <h2 className="text-xl font-bold mb-4">Deals by Product</h2>
+                                        <div className="grid grid-cols-5 gap-4">
+                                            {Object.entries(reportData.dealsByProduct).map(([p,c]) => (
+                                                <div key={p} className="text-center p-4 bg-gray-50 rounded-lg">
+                                                    <div className="text-3xl font-bold text-blue-600">{c}</div>
+                                                    <div className="text-sm text-gray-600">{p}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeView === 'table' && (
+                                <>
+                                    {showAddForm && (
+                                        <div className="bg-gray-50 p-6 rounded-lg mb-6 border-2 border-blue-200">
+                                            <div className="flex justify-between items-center mb-4">
+                                                <h3 className="text-lg font-semibold">Add New Customer</h3>
+                                                <button onClick={() => setShowAddForm(false)} className="text-gray-500">
+                                                    <X />
+                                                </button>
+                                            </div>
+                                            <div className="grid grid-cols-3 gap-4">
+                                                <input 
+                                                    type="text" 
+                                                    placeholder="Customer Name" 
+                                                    value={newCustomer.customer} 
+                                                    onChange={(e) => setNewCustomer({ ...newCustomer, customer: e.target.value })} 
+                                                    className="px-3 py-2 border rounded-lg" 
+                                                />
+                                                <div>
+                                                    <label className="block text-sm font-medium mb-1">Stage</label>
+                                                    <select 
+                                                        value={newCustomer.stage} 
+                                                        onChange={(e) => setNewCustomer({ ...newCustomer, stage: e.target.value })} 
+                                                        className="w-full px-3 py-2 border rounded-lg"
+                                                    >
+                                                        {stages.map(s => <option key={s} value={s}>{s}</option>)}
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium mb-1">Next Action Date</label>
+                                                    <input 
+                                                        type="date" 
+                                                        value={newCustomer.nextActionDate} 
+                                                        onChange={(e) => setNewCustomer({ ...newCustomer, nextActionDate: e.target.value })} 
+                                                        className="w-full px-3 py-2 border rounded-lg" 
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium mb-1">Tentative Closing</label>
+                                                    <input 
+                                                        type="date" 
+                                                        value={newCustomer.tentativeClosingDate} 
+                                                        onChange={(e) => setNewCustomer({ ...newCustomer, tentativeClosingDate: e.target.value })} 
+                                                        className="w-full px-3 py-2 border rounded-lg" 
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium mb-1">Closed Date</label>
+                                                    <input 
+                                                        type="date" 
+                                                        value={newCustomer.closedDate} 
+                                                        onChange={(e) => setNewCustomer({ ...newCustomer, closedDate: e.target.value })} 
+                                                        className="w-full px-3 py-2 border rounded-lg" 
+                                                    />
+                                                </div>
+                                                <div className="col-span-3">
+                                                    <label className="block text-sm font-medium mb-2">Owners</label>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {ownersList.map(o => (
+                                                            <button 
+                                                                key={o} 
+                                                                onClick={() => toggleOwner(o)} 
+                                                                className={`px-3 py-1 rounded-full text-sm font-medium border-2 ${newCustomer.owners?.includes(o) ? ownerColors[o] : 'bg-white text-gray-600 border-gray-300'}`}
+                                                            >
+                                                                {o}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <textarea 
+                                                    placeholder="Remarks" 
+                                                    value={newCustomer.otherRemarks} 
+                                                    onChange={(e) => setNewCustomer({ ...newCustomer, otherRemarks: e.target.value })} 
+                                                    className="px-3 py-2 border rounded-lg col-span-3" 
+                                                    rows="2" 
+                                                />
+                                            </div>
+                                            <button 
+                                                onClick={addCust} 
+                                                className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700"
+                                            >
+                                                Add Customer
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full">
+                                            <thead>
+                                                <tr className="bg-gray-100">
+                                                    <th className="px-4 py-3 text-left text-sm font-semibold">Actions</th>
+                                                    {columns.map(col => (
+                                                        <th 
+                                                            key={col.key} 
+                                                            onClick={() => handleSort(col.key)} 
+                                                            className="px-4 py-3 text-left text-sm font-semibold cursor-pointer hover:bg-gray-200 whitespace-nowrap"
+                                                        >
+                                                            <div className="flex items-center gap-2">
+                                                                {col.label}
+                                                                {sortConfig.key === col.key && (sortConfig.direction === 'asc' ? <ChevronUp /> : <ChevronDown />)}
+                                                            </div>
+                                                        </th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {sortedData.map(c => (
+                                                    <tr key={c.id} className="border-b hover:bg-gray-50">
+                                                        <td className="px-4 py-3">
+                                                            <button 
+                                                                onClick={() => delCust(c.id)} 
+                                                                className="text-red-600 hover:text-red-800"
+                                                            >
+                                                                <X />
+                                                            </button>
+                                                        </td>
+                                                        {columns.map(col => (
+                                                            <td key={col.key} className="text-sm">
+                                                                {renderCell(c, col)}
+                                                            </td>
+                                                        ))}
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
